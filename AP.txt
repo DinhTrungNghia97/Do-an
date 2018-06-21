@@ -1,0 +1,317 @@
+#include <ESP8266WiFi.h>;
+#include <WiFiUDP.h>
+#include <FirebaseArduino.h>
+#define PORT 23
+#define FIREBASE_HOST "Enter your Database directory here" 
+#define FIREBASE_AUTH "Secret key here"  
+#define WIFI_SSID "Your Wifi" 
+#define WIFI_PASSWORD "Password"
+const char *ssid = "Your AP name";
+const char *password = "Your AP password";
+IPAddress room1_ip(192,168,4,30);
+IPAddress room2_ip(192,168,4,31);
+IPAddress room3_ip(192,168,4,32);
+int test1 ,test2,test3,test4,test5,test6;
+char packetBuffer[255];
+String hum,temp,wanted,fire,hum1,temp1,fire1,gas,hum2,temp2,soil,burglar;
+IPAddress local_IP(192, 168, 4, 1);
+IPAddress gateway(192, 168, 4, 1);
+IPAddress subnet(255, 255, 255, 0);
+// Khoi tao port de clients ket noi.
+WiFiServer server(PORT);
+WiFiClient clients;
+WiFiUDP Udp;
+void setup() {
+  Serial.begin(115200);
+  Serial.println();
+  WiFi.mode(WIFI_AP);
+  Serial.print("Setting soft-AP configuration ... ");
+  //Cau hinh acces point, cai dat soft AP de client ket noi vao.
+  WiFi.softAPConfig(local_IP, gateway, subnet);
+  WiFi.softAP(ssid, password);
+  //In ra local_IP cua AP.
+  Serial.print("AP IP address: ");
+  Serial.println(WiFi.softAPIP());
+  Serial.println("Telnet server started");
+  server.begin();
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("connecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  Serial.print("connected: ");
+  Serial.println(WiFi.localIP());
+  Udp.begin(27);
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+}
+void loop() {
+    int packetSize = Udp.parsePacket();
+    if (packetSize) {
+    Serial.print("Received packet of size ");
+    Serial.println(packetSize);
+    Serial.print("From ");
+    IPAddress remoteIp = Udp.remoteIP();
+    Serial.print(remoteIp);
+    Serial.print(", port ");
+    Serial.println(Udp.remotePort());
+    // read the packet into packetBufffer
+    int len = Udp.read(packetBuffer, 255);
+    if (len > 0) {
+      packetBuffer[len] = 0;
+    }
+    Serial.println("Contents:");
+    Serial.println(packetBuffer);
+    String line  = String(packetBuffer);
+  /*if(line.indexOf("Burglar") != -1)
+  {for (int i = 0; i < line.length(); i++) {
+        if (line.charAt(i) == ',') {
+           test1 = i;}
+           }
+         burglar = line;
+         burglar.remove(0,test1+1);
+        Firebase.setString("Burglar",burglar);
+  }
+   */
+         
+ /*  if (remoteIp == room1_ip)
+   {if (line == "connected"){Firebase.setString("Connect1","1");}
+    if (line == "disconnected"){Firebase.setString("Connect1","0");}
+    }
+  if (remoteIp == room2_ip)
+   {if (line == "connected"){Firebase.setString("Connect2","1");}
+    if (line == "disconnected"){Firebase.setString("Connect2","0");}
+    }
+   if (remoteIp == room3_ip)
+   {if (line == "connected"){Firebase.setString("Connect3","1");}
+    if (line == "disconnected"){Firebase.setString("Connect3","0");}
+    }
+  */
+  if(line.indexOf("Data1") != -1)
+{
+            for (int i = 0; i < line.length(); i++) {
+            if (line.charAt(i) == ',') {
+            test1 = i;
+            for (test1; i < line.length(); i++) {
+            if (line.charAt(i) == ',') {
+            test2 = i;
+            for (test2; i<line.length();i++){
+            if(line.charAt(i) == ','){
+              test3 = i;
+              }
+              }
+        }        
+
+        }
+        }
+        }
+           test2  =test2+3;
+           wanted = line;
+           wanted.remove(0,test1+1);
+           hum= wanted;
+           temp =wanted;
+           fire =wanted;
+           hum.remove(test2 - test1-1);
+           temp.remove(0,test2 - test1);
+           temp.remove(test3-test2-1);
+           fire.remove(0,test2 - test1);
+           fire.remove(0,test3 - test2);
+           Serial.println(test1);
+           Serial.println(test2);
+           Serial.println(test3);
+           Serial.println(hum);
+           Serial.println(temp);
+           Serial.println(fire);
+           Firebase.setString("Humi",hum);
+           Firebase.setString("Temp",temp);
+           Firebase.setString("Fire",fire); 
+        }
+  if(line.indexOf("Data2") != -1){
+   
+          /*for (int i = 0; i < line.length(); i++) {
+        if (line.charAt(i) == ',') {
+           test4 = i;
+           /* for (test4; i < line.length(); i++) {
+        if (line.charAt(i) == ',') {
+           test5 = i;
+           
+           for (test5; i<line.length();i++){
+            if(line.charAt(i) == ','){
+              test6 = i;
+              }
+              }
+        }        
+
+        }
+          
+        }
+        }*/
+           test4 = 5;
+           test5  =test4+3;
+           test6 = test5+2;
+           int test7 = test6 + 2;
+           wanted = line;
+           wanted.remove(0,test4+1);
+           hum1 = wanted;
+           temp1 =wanted;
+           fire1 =wanted;
+           gas =wanted;
+           hum1.remove(test5 - test4-1);
+           temp1.remove(0,test5 - test4);
+           temp1.remove(test6-test4-3);
+           fire1.remove(0,test5 - test4+1);
+           fire1.remove(0,test6 - test5);
+           fire1.remove(1);
+           gas.remove(0,test5 - test4+1);
+           gas.remove(0,test6 - test5);
+           gas.remove(0,2);
+           Serial.println(hum1);
+           Serial.println(temp1);
+           Serial.println(fire1);
+           Serial.println(gas);
+           Firebase.setString("Humi1",hum1);
+           Firebase.setString("Temp1",temp1);
+           Firebase.setString("Fire1",fire1);
+           Firebase.setString("Gas",gas);
+    }
+  if(line.indexOf("Data3") != -1){
+          for (int i = 0; i < line.length(); i++) {
+        if (line.charAt(i) == ',') {
+           test1 = i;
+            for (test1; i < line.length(); i++) {
+        if (line.charAt(i) == ',') {
+           test2 = i;
+           for (test2; i<line.length();i++){
+            if(line.charAt(i) == ','){
+              test3 = i;
+              }
+              }
+        }        
+        }
+        }
+        }
+           test2  =test2+3;
+           wanted = line;
+           wanted.remove(0,test1+1);
+           hum2= wanted;
+           temp2 =wanted;
+           soil =wanted;
+           hum2.remove(test2 - test1-1);
+           temp2.remove(0,test2 - test1);
+           temp2.remove(test3-test2-1);
+           soil.remove(0,test2 - test1);
+           soil.remove(0,test3 - test2);
+           Serial.println(test1);
+           Serial.println(test2);
+           Serial.println(test3);
+           Serial.println(hum2);
+           Serial.println(temp2);
+           Serial.println(soil);
+           Firebase.setString("Humi2",hum2);
+           Firebase.setString("Temp2",temp2);
+           Firebase.setString("Soil",soil);
+    }
+  }
+        if((fire=="1") && (Firebase.getString("Alarm")=="1")){
+          Udp.beginPacket(room1_ip, 27);
+          Udp.write("batalarm");
+          Udp.endPacket();
+         }
+         if((fire=="1") && (Firebase.getString("Alarm")=="0")){
+          Udp.beginPacket(room1_ip, 27);
+          Udp.write("tatalarm");
+          Udp.endPacket();
+         }
+         if(fire=="0"){
+          Firebase.setString("Alarm","1");         
+         }
+        if((fire1=="1") && (Firebase.getString("Alarm1")=="1")){
+          Udp.beginPacket(room2_ip, 27);
+          Udp.write("batalarm");
+          Udp.endPacket();
+         }
+         if((fire1=="1") && (Firebase.getString("Alarm1")=="0")){
+          Udp.beginPacket(room2_ip, 27);
+          Udp.write("tatalarm");
+          Udp.endPacket();
+         }
+         if(fire1=="0"){
+          Firebase.setString("Alarm1","1");         
+         }
+        if(Firebase.getString("Control1")=="1"){
+              Udp.beginPacket(room1_ip, 27);
+              Udp.write("device1on");
+              Udp.endPacket();
+              Firebase.setString("Button1","1");
+          }
+           if (Firebase.getString("Control1")=="0"){
+              Udp.beginPacket(room1_ip, 27);
+              Udp.write("device1off");
+              Udp.endPacket();
+              Firebase.setString("Button1","0");
+          }
+           if (Firebase.getString("Control2")=="1"){
+              Udp.beginPacket(room1_ip, 27);
+              Udp.write("device2on");
+              Udp.endPacket();
+              Firebase.setString("Button2","1");
+          }
+           if (Firebase.getString("Control2")=="0"){
+              Udp.beginPacket(room1_ip, 27);
+              Udp.write("device2off");
+              Udp.endPacket();
+              Firebase.setString("Button2","0");
+          }
+           if (Firebase.getString("Control5")=="1"){
+              Udp.beginPacket(room2_ip, 27);
+              Udp.write("device1on");
+              Udp.endPacket();
+              Firebase.setString("Button5","1");
+          }
+           if (Firebase.getString("Control5")=="0"){
+              Udp.beginPacket(room2_ip, 27);
+              Udp.write("device1off");
+              Udp.endPacket();
+              Firebase.setString("Button5","0");
+          }
+           if (Firebase.getString("Control6")=="1"){
+              Udp.beginPacket(room2_ip, 27);
+              Udp.write("device2on");
+              Udp.endPacket();
+              Firebase.setString("Button6","1");
+          }
+           if (Firebase.getString("Control6")=="0"){
+              Udp.beginPacket(room2_ip, 27);
+              Udp.write("device2off");
+              Udp.endPacket();
+              Firebase.setString("Button6","0");
+          }
+           if (Firebase.getString("Control7")=="1"){
+              Udp.beginPacket(room3_ip, 27);
+              Udp.write("device1on");
+              Udp.endPacket();
+              Firebase.setString("Button7","1");
+          } 
+           if (Firebase.getString("Control7")=="0"){
+              Udp.beginPacket(room3_ip, 27);
+              Udp.write("device1off");
+              Udp.endPacket();
+              Firebase.setString("Button7","0");
+          }
+           if (Firebase.getString("Control8")=="1"){
+              Udp.beginPacket(room3_ip, 27);
+              Udp.write("device2on");
+              Udp.endPacket();
+              Firebase.setString("Button8","1");
+          }         
+           if (Firebase.getString("Control8")=="0"){
+              Udp.beginPacket(room3_ip, 27);
+              Udp.write("device2off");
+              Udp.endPacket();
+              Firebase.setString("Button8","0");
+          }    
+}
+
+
+
