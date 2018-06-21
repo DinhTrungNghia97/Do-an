@@ -1,0 +1,183 @@
+#include <ESP8266WiFi.h>
+#include<WiFiUDP.h>
+#include<Ticker.h>
+#include "DHT.h"
+int LED1 = 2;
+int LED2 = 12;
+int f;
+int b;
+ const char *ssid = "Your AP";
+ const char *password = "Your AP password";
+ IPAddress server_ip(192, 168, 4, 1);
+ 
+ char packetBuffer[255];
+ bool senddata = false;
+#define PORT  23
+#define DHTPIN D3
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+char sendpacket[255];
+char burglar[100];
+String string1 = "Data1,";
+String burglarnotifi = "Burglar,";
+const char dis_noti []= "disconnected";
+const char con_noti []= "connected";
+Ticker sensor;
+WiFiClient client;
+WiFiUDP Udp;  
+IPAddress ip(192, 168, 4, 30);            // Static IP address of d= evice                                                            
+IPAddress gateway(192,168,4,1);           // gateway of your network
+IPAddress subnet(255,255,255,0);          // subnet mask of your network
+WiFiServer server(80);
+void  readdatasensor()
+{  
+    senddata = true; 
+  
+  }
+
+void setup() {
+
+  pinMode(D3,OUTPUT);
+  pinMode(D5,INPUT);
+  //pinMode();
+  pinMode(D1, OUTPUT);
+  pinMode(D2, OUTPUT);
+  pinMode(D6,OUTPUT);
+  pinMode(D8,OUTPUT);
+  pinMode(D4,OUTPUT);
+  pinMode(D7,OUTPUT);
+  digitalWrite(D1,HIGH);
+  digitalWrite(D2,HIGH);
+  digitalWrite(D6,HIGH);
+  digitalWrite(D7,HIGH);
+  
+  digitalWrite(D8,0);
+  Serial.begin(115200);
+  Serial.println();
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  WiFi.config(ip, gateway, subnet);
+  Serial.print("connecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  Serial.print("connected: ");
+  Serial.println(WiFi.localIP());
+  server.begin();
+   dht.begin();
+   if(Udp.begin(27)==1) Serial.print("UDP connected");
+sensor.attach(20,readdatasensor);
+}
+void loop(){ 
+int f = !digitalRead(D5);
+if (f==0)
+{ 
+  digitalWrite(D8,0);
+}
+  
+ /* if(digitalRead(D6)==0){
+    if (digitalRead(D4)==1){
+      digitalWrite(D8,1);
+       burglarnotifi +="1";
+        burglarnotifi.toCharArray(burglar,20);
+        Udp.beginPacket(server_ip, 27);
+    Udp.write(sendpacket,255);
+    Udp.endPacket();
+      burglarnotifi = "Burglar,";
+      }
+      else
+      { burglarnotifi +="0";
+        Udp.beginPacket(server_ip, 27);
+    Udp.write(sendpacket,255);
+    Udp.endPacket();
+       burglarnotifi = "Burglar,";
+        }
+    }
+  if (digitalRead(D6)==  LOW)
+  { b = digitalRead(D8);
+     burglarnotifi += b;
+    Udp.beginPacket(server_ip, 27);
+    Udp.write(sendpacket,255);
+    Udp.endPacket();
+    burglarnotifi = "Burglar,";    
+    
+    }*/
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    while (!client.connected()) {
+       if (!client.connect(server_ip, PORT)) {
+         Serial.println("connection failed"); 
+    delay(1000);
+         
+         return;
+       }
+     }
+  
+    delay(1000);
+  if (senddata == true) {
+    int f = !digitalRead(D5);
+    int h = dht.readHumidity();
+    int t = dht.readTemperature(); 
+     string1 +=h;
+     string1 += ",";
+     string1 += t;
+     string1 +=",";
+     string1+= f;
+    string1.toCharArray(sendpacket,20);
+    Udp.beginPacket(server_ip, 27);
+    Udp.write(sendpacket,255);
+    Udp.endPacket();
+     string1 = "Data1,";
+     senddata = false;
+  }
+  
+  }
+  int packetSize = Udp.parsePacket();
+  if (packetSize) {
+    Serial.print("Received packet of size ");
+    Serial.println(packetSize);
+    Serial.print("From ");
+    IPAddress remoteIp = Udp.remoteIP();
+    Serial.print(remoteIp);
+    Serial.print(", port ");
+    Serial.println(Udp.remotePort());
+    int len = Udp.read(packetBuffer, 255);
+    if (len > 0) {
+      packetBuffer[len] = 0;
+    }
+    Serial.println("Contents:");
+    Serial.println(packetBuffer);
+    String line  = String(packetBuffer);
+    if(line == "device1on")
+    {
+  digitalWrite(D1,LOW) ;
+       }
+ 
+      if(line == "device1off") 
+     {
+digitalWrite(D1,HIGH) ;
+    
+}
+
+      if(line == "device2on") 
+     {
+digitalWrite(D2,LOW) ;
+    
+}
+
+      if(line == "device2off") 
+{     
+digitalWrite(D2,HIGH) ;
+    
+}
+      if(line == "batalarm"){
+        digitalWrite(D8,1);
+      }
+      if(line == "tatalarm"){
+        digitalWrite(D8,0);
+      }
+  
+}
+}

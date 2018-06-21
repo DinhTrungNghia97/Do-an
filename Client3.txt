@@ -1,0 +1,145 @@
+#include <ESP8266WiFi.h>
+#include<WiFiUDP.h>
+#include<Ticker.h>
+#include "DHT.h"
+
+ const char *ssid = "Your AP";
+ const char *password = "Your password";
+ IPAddress server_ip(192, 168, 4, 1);
+ 
+ char packetBuffer[255];
+ bool senddata = false;
+#define PORT  23
+#define DHTPIN D5
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+char sendpacket[255];
+String string1 = "Data3,";
+Ticker sensor;
+WiFiClient client;
+WiFiUDP Udp;  
+IPAddress ip(192, 168, 4, 32);            // Static IP address of d= evice                                                            
+IPAddress gateway(192,168,4,1);           // gateway of your network
+IPAddress subnet(255,255,255,0);          // subnet mask of your network
+WiFiServer server(80);
+void  readdatasensor()
+{  
+    senddata = true; 
+  
+  }
+
+void setup() {
+
+  pinMode(D3,INPUT);
+  pinMode(D5,OUTPUT);
+  //pinMode();
+  pinMode(D6, OUTPUT);
+  pinMode(D7, OUTPUT);
+  digitalWrite(D6,HIGH);
+  digitalWrite(D7,HIGH);
+ 
+  Serial.begin(115200);
+  Serial.println();
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  WiFi.config(ip, gateway, subnet);
+  Serial.print("connecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  Serial.print("connected: ");
+  Serial.println(WiFi.localIP());
+  server.begin();
+   dht.begin();
+   if(Udp.begin(27)==1) Serial.print("UDP connected");
+sensor.attach(20,readdatasensor);
+}
+void loop()
+{ 
+if (WiFi.status() == WL_CONNECTED) {
+    while (!client.connected()) {
+       if (!client.connect(server_ip, PORT)) {
+         Serial.println("connection failed");
+         delay(1000);
+         return;
+       }
+     }
+  
+  
+  if (senddata == true) {
+    int h = dht.readHumidity();
+    int t = dht.readTemperature(); 
+    int soil = getSoilMoist(); 
+     string1 +=h;
+     string1 += ",";
+     string1 += t;
+     string1 +=",";
+     string1 += soil;
+    string1.toCharArray(sendpacket,20);
+    Udp.beginPacket(server_ip, 27);
+    Udp.write(sendpacket,255);
+    Udp.endPacket();
+     string1 = "Data3,";
+     senddata = false;
+  }
+  
+  }
+  int packetSize = Udp.parsePacket();
+  if (packetSize) {
+    Serial.print("Received packet of size ");
+    Serial.println(packetSize);
+    Serial.print("From ");
+    IPAddress remoteIp = Udp.remoteIP();
+    Serial.print(remoteIp);
+    Serial.print(", port ");
+    Serial.println(Udp.remotePort());
+    int len = Udp.read(packetBuffer, 255);
+    if (len > 0) {
+      packetBuffer[len] = 0;
+    }
+    Serial.println("Contents:");
+    Serial.println(packetBuffer);
+    String line  = String(packetBuffer);
+    if(line == "device1on")
+    {
+  digitalWrite(D6,LOW) ;
+       }
+ 
+    if(line == "device1off") 
+     {
+digitalWrite(D6,HIGH) ;
+    
+}
+
+    if(line == "device2on") 
+     {
+digitalWrite(D7,LOW) ;
+    
+}
+
+    if(line == "device2off") 
+     {
+digitalWrite(D7,HIGH) ;
+    
+}
+
+   
+   
+  
+}
+}
+int getSoilMoist()
+{
+  int i = 0;
+  int anaValue = 0;
+  for (i = 0; i < 10; i++)  //
+  {
+    anaValue += analogRead(A0);
+    delay(50);   
+  }
+  anaValue = anaValue / (i);
+  anaValue = map(anaValue, 1023, 0, 0, 100); 
+  return anaValue;
+}
