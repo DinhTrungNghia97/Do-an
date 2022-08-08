@@ -2,49 +2,55 @@
 #include<WiFiUDP.h>
 #include<Ticker.h>
 #include "DHT.h"
+
+//Declares variables
 int LED1 = 2;
 int LED2 = 12;
 
- const char *ssid = "Your AP";
- const char *password = "Your AP Password";
- IPAddress server_ip(192, 168, 4, 1);
+const char *ssid = "Your AP";
+const char *password = "Your AP Password";
+IPAddress server_ip(192, 168, 4, 1);
  
- char packetBuffer[255];
- bool senddata = false;
+char packetBuffer[255];
+bool senddata = false;
 #define PORT  23
 #define DHTPIN D3
 #define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
 char sendpacket[255];
 String string1 = "Data2,";
+
+//Set up ticker timer and set up UDP protocol
 Ticker sensor;
 WiFiClient client;
-WiFiUDP Udp;  
+WiFiUDP Udp; 
 IPAddress ip(192, 168, 4, 31);            // Static IP address of d= evice                                                            
 IPAddress gateway(192,168,4,1);           // gateway of your network
 IPAddress subnet(255,255,255,0);          // subnet mask of your network
 WiFiServer server(80);
-void  readdatasensor()
-{  
+
+void  readdatasensor() {  
     senddata = true; 
-  
-  }
+}
 
 void setup() {
-
-pinMode(D1,OUTPUT);
-pinMode(D2,OUTPUT);
-pinMode(D3,INPUT);
+  
+  //Setup output/input pins
+  pinMode(D1,OUTPUT);
+  pinMode(D2,OUTPUT);
+  pinMode(D3,INPUT);
   pinMode(D5,INPUT);
   pinMode(D4, OUTPUT);
   pinMode(D8,INPUT);
   pinMode(D6, OUTPUT);
   pinMode(D7, OUTPUT);
-   digitalWrite(D1,HIGH);
+  
+  digitalWrite(D1,HIGH);
   digitalWrite(D2,HIGH);
   digitalWrite(D6,HIGH);
   digitalWrite(D7,HIGH);
- Serial.begin(115200);
+  
+  Serial.begin(115200);
   Serial.println();
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -58,31 +64,34 @@ pinMode(D3,INPUT);
   Serial.print("connected: ");
   Serial.println(WiFi.localIP());
   server.begin();
-   dht.begin();
-   if(Udp.begin(27)==1) Serial.print("UDP connected");
+  dht.begin();
+  if(Udp.begin(27)==1) 
+    Serial.print("UDP connected");
   sensor.attach(18,readdatasensor);
 }
-void loop()
-{
-int f = !digitalRead(D5);
-if (f==0)
-{ 
-  digitalWrite(D4,0);
-}
-{ if (WiFi.status() == WL_CONNECTED) {
+
+void loop() {
+  int f = !digitalRead(D5);
+  if (f==0) { 
+    digitalWrite(D4,0);
+  }
+  
+  if (WiFi.status() == WL_CONNECTED) {
     while (!client.connected()) {
        if (!client.connect(server_ip, PORT)) {
          Serial.println("connection failed");
          delay(1000);
          return;
        }
-     }}
+    }
 
-  if (senddata == true) { 
-    int f = !digitalRead(D5);
-    int g = !digitalRead(D8);
-    int h = dht.readHumidity();
-    int t = dht.readTemperature();  
+   if (senddata == true) { 
+     int f = !digitalRead(D5);
+     int g = !digitalRead(D8);
+     int h = dht.readHumidity();
+     int t = dht.readTemperature();  
+     
+     //Combine all data into one string
      string1 +=h;
      string1 += ",";
      string1 += t;
@@ -90,15 +99,18 @@ if (f==0)
      string1 += f;
      string1 +=",";
      string1 += g;
-    string1.toCharArray(sendpacket,20);
-    Udp.beginPacket(server_ip, 27);
-    Udp.write(sendpacket,255);
-    Udp.endPacket();
+    
+     //Send data by characters to AP
+     string1.toCharArray(sendpacket,20);
+     Udp.beginPacket(server_ip, 27);
+     Udp.write(sendpacket,255);
+     Udp.endPacket();
      string1 = "Data2,";
      senddata = false;
-  }
+   }
+ }
   
-  }
+  //If there is any data received from AP, then process the string to get the data
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     Serial.print("Received packet of size ");
@@ -113,40 +125,33 @@ if (f==0)
       packetBuffer[len] = 0;
     }
     Serial.println("Contents:");
-     Serial.println(packetBuffer);
+    Serial.println(packetBuffer);
     String line  = String(packetBuffer);
-   if(line == "device1on")
-    {
-  digitalWrite(D6,LOW) ;
-       }
- 
-    if(line == "device1off") 
-     {
-digitalWrite(D6,HIGH) ;
-    
-}
-
-    if(line == "device2on") 
-     {
-digitalWrite(D7,LOW);
-    
-}
-
-    if(line == "device2off") 
-     {
-digitalWrite(D7,HIGH) ;
-    
-}
-
-     if(line == "batalarm"){
-        digitalWrite(D4,1);
-      }
-      if(line == "tatalarm"){
-        digitalWrite(D4,0);
-      }
-  
    
-  
+    if(line == "device1on") {
+       digitalWrite(D6,LOW) ;
+    }
+ 
+    if(line == "device1off") {
+       digitalWrite(D6,HIGH) ;
+    }
 
-}
+    if(line == "device2on") {
+       digitalWrite(D7,LOW);
+    }
+
+    if(line == "device2off") {
+       digitalWrite(D7,HIGH) ;
+    }
+    
+    //Turn alarm on
+    if(line == "batalarm") {
+        digitalWrite(D4,1);
+    }
+    
+    //Turn alarm off
+    if(line == "tatalarm"){
+        digitalWrite(D4,0);
+    }
+  }
 }
