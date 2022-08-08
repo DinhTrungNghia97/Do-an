@@ -3,12 +3,13 @@
 #include<Ticker.h>
 #include "DHT.h"
 
- const char *ssid = "Your AP";
- const char *password = "Your password";
- IPAddress server_ip(192, 168, 4, 1);
+//Declares variables
+const char *ssid = "Your AP";
+const char *password = "Your password";
+IPAddress server_ip(192, 168, 4, 1);
  
- char packetBuffer[255];
- bool senddata = false;
+char packetBuffer[255];
+bool senddata = false;
 #define PORT  23
 #define DHTPIN D5
 #define DHTTYPE DHT22
@@ -22,14 +23,14 @@ IPAddress ip(192, 168, 4, 32);            // Static IP address of d= evice
 IPAddress gateway(192,168,4,1);           // gateway of your network
 IPAddress subnet(255,255,255,0);          // subnet mask of your network
 WiFiServer server(80);
-void  readdatasensor()
-{  
+
+void readdatasensor() {  
     senddata = true; 
-  
-  }
+}
 
 void setup() {
-
+ 
+  //Set up output/input pin
   pinMode(D3,INPUT);
   pinMode(D5,OUTPUT);
   //pinMode();
@@ -52,40 +53,47 @@ void setup() {
   Serial.print("connected: ");
   Serial.println(WiFi.localIP());
   server.begin();
-   dht.begin();
-   if(Udp.begin(27)==1) Serial.print("UDP connected");
-sensor.attach(20,readdatasensor);
+  dht.begin();
+  if(Udp.begin(27)==1) 
+    Serial.print("UDP connected");
+  sensor.attach(20,readdatasensor);
 }
-void loop()
-{ 
-if (WiFi.status() == WL_CONNECTED) {
+
+void loop() { 
+  //Check if connection is good or not
+  // If not, try to reconnect
+  if (WiFi.status() == WL_CONNECTED) {
     while (!client.connected()) {
        if (!client.connect(server_ip, PORT)) {
          Serial.println("connection failed");
          delay(1000);
          return;
        }
-     }
-  
-  
-  if (senddata == true) {
-    int h = dht.readHumidity();
-    int t = dht.readTemperature(); 
-    int soil = getSoilMoist(); 
-     string1 +=h;
-     string1 += ",";
-     string1 += t;
-     string1 +=",";
-     string1 += soil;
-    string1.toCharArray(sendpacket,20);
-    Udp.beginPacket(server_ip, 27);
-    Udp.write(sendpacket,255);
-    Udp.endPacket();
-     string1 = "Data3,";
-     senddata = false;
+    }
+   
+    if (senddata == true) {
+      int h = dht.readHumidity();
+      int t = dht.readTemperature(); 
+      int soil = getSoilMoist(); 
+      
+      //String processing
+      string1 +=h;
+      string1 += ",";
+      string1 += t;
+      string1 +=",";
+      string1 += soil;
+      
+      //Sending string data to AP by characters
+      string1.toCharArray(sendpacket,20);
+      Udp.beginPacket(server_ip, 27);
+      Udp.write(sendpacket,255);
+      Udp.endPacket();
+      string1 = "Data3,";
+      senddata = false;
+    }
   }
   
-  }
+  //If there is any data from AP -> receive the data
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     Serial.print("Received packet of size ");
@@ -102,40 +110,29 @@ if (WiFi.status() == WL_CONNECTED) {
     Serial.println("Contents:");
     Serial.println(packetBuffer);
     String line  = String(packetBuffer);
-    if(line == "device1on")
-    {
-  digitalWrite(D6,LOW) ;
-       }
+    
+    if(line == "device1on") {
+       digitalWrite(D6,LOW);
+    }
  
-    if(line == "device1off") 
-     {
-digitalWrite(D6,HIGH) ;
-    
+    if(line == "device1off") {
+      digitalWrite(D6,HIGH) ;
+    }
+
+    if(line == "device2on") {
+      digitalWrite(D7,LOW) ;
+    }
+
+    if(line == "device2off") {
+      digitalWrite(D7,HIGH) ;
+    }
 }
 
-    if(line == "device2on") 
-     {
-digitalWrite(D7,LOW) ;
-    
-}
-
-    if(line == "device2off") 
-     {
-digitalWrite(D7,HIGH) ;
-    
-}
-
-   
-   
-  
-}
-}
-int getSoilMoist()
-{
+//Function to get the soil moisture data from sensor
+int getSoilMoist() {
   int i = 0;
   int anaValue = 0;
-  for (i = 0; i < 10; i++)  //
-  {
+  for (i = 0; i < 10; i++) {
     anaValue += analogRead(A0);
     delay(50);   
   }
