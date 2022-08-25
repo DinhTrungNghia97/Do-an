@@ -1,2 +1,3 @@
-# NodeMcu
-This project demonstrates how to monitor and control your ESP with the structure of 1 AP and 3 Clients by sending over IP UDP packets containing sensor data. Commands are  obtained by using an Android App connected to Firebase database.
+# Home Automation System
+
+This Project is to create Home Automation Prototype using the ESP8266 WiFi transceiver. In this Home Automation System, we will control 3 home appliances as Fan, Light,  Refrigerator and monitor room temperature and humidity. The network consists of 1 node Access Point and 3 node Clients. When the Client request is established from any device, Esp8266 will respond to it in real time with HTML lines which will be displayed as a web page by sending over IP UDP packets containing sensor data. Commands are  obtained by using an Android Application connected to Firebase database.
